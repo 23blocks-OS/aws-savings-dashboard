@@ -1,0 +1,22 @@
+# Copy this file to terraform.tfvars and customize
+
+aws_region         = "us-east-1"
+environment        = "prod"
+project_name       = "aws-savings-dashboard"
+config_table_name  = "InstanceScheduler-ConfigTable"
+schedule_tag_name  = "Schedule"
+
+# Lambda Configuration
+lambda_runtime     = "nodejs20.x"
+lambda_timeout     = 30
+lambda_memory_size = 512
+
+# API Gateway
+api_stage_name     = "prod"
+enable_api_gateway_logging = true
+
+# CORS Configuration
+cors_allowed_origins = ["*"]  # Restrict this in production
+
+# CloudFront
+cloudfront_price_class = "PriceClass_100"  # US, Canada, Europe

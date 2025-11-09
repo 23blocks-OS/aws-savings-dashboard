@@ -46,7 +46,7 @@ This is a monorepo containing:
 
 - **WebDashboard**: React-based SPA with TypeScript and Material-UI
 - **Backend**: AWS Lambda functions providing REST API
-- **IaC**: AWS CDK infrastructure definitions for deployment
+- **IaC**: Terraform infrastructure definitions for deployment
 - **Docs**: Comprehensive documentation
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation.
@@ -57,7 +57,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation
 - AWS Account with Instance Scheduler deployed
 - Node.js 18+ and npm
 - AWS CLI configured
-- AWS CDK installed globally
+- Terraform >= 1.5 installed
 
 ### Development Setup
 
@@ -78,11 +78,6 @@ cd ..
 cd WebDashboard
 npm install
 cd ..
-
-# Install IaC dependencies
-cd IaC
-npm install
-cd ..
 ```
 
 3. Configure environment:
@@ -96,13 +91,13 @@ cp WebDashboard/.env.example WebDashboard/.env
 
 4. Start development:
 ```bash
-# Terminal 1: Start backend (requires AWS credentials)
+# Terminal 1: Build backend
 cd Backend
-npm run dev
+npm run build
 
 # Terminal 2: Start frontend
 cd WebDashboard
-npm start
+npm run dev
 ```
 
 5. Open browser to `http://localhost:3000`
@@ -113,9 +108,14 @@ See [Docs/deployment.md](./Docs/deployment.md) for full deployment instructions.
 
 Quick deploy:
 ```bash
-cd IaC
+# Build backend
+cd Backend
 npm run build
-cdk deploy --all
+
+# Deploy with Terraform
+cd ../IaC
+terraform init
+terraform apply
 ```
 
 ## Project Structure
@@ -139,13 +139,13 @@ aws-savings-dashboard/
 │   │   ├── types/         # TypeScript types
 │   │   └── utils/         # Utility functions
 │   └── tests/
-├── IaC/                   # AWS CDK infrastructure
-│   ├── lib/
-│   │   ├── api-stack.ts           # API Gateway + Lambda
-│   │   ├── dashboard-stack.ts     # S3 + CloudFront
-│   │   └── monitoring-stack.ts    # CloudWatch dashboards
-│   └── bin/
-│       └── app.ts
+├── IaC/                   # Terraform infrastructure
+│   ├── main.tf                # Main configuration
+│   ├── variables.tf           # Input variables
+│   ├── outputs.tf             # Output values
+│   └── modules/
+│       ├── api/               # API Gateway + Lambda
+│       └── dashboard/         # S3 + CloudFront
 └── Docs/                  # Documentation
     ├── user-guide.md
     ├── api-reference.md
@@ -165,7 +165,7 @@ aws-savings-dashboard/
 
 - **Frontend**: React 18, TypeScript, Material-UI, React Query, Recharts
 - **Backend**: Node.js 20, TypeScript, AWS SDK v3
-- **Infrastructure**: AWS CDK, Lambda, API Gateway, S3, CloudFront, DynamoDB
+- **Infrastructure**: Terraform, Lambda, API Gateway, S3, CloudFront, DynamoDB
 - **Testing**: Jest, React Testing Library
 
 ## Cost Considerations
@@ -208,4 +208,4 @@ MIT License - see [LICENSE](./LICENSE) for details.
 - [ ] Schedule templates library
 - [ ] AI-powered schedule recommendations
 - [ ] Mobile app
-- [ ] Terraform IaC support
+- [ ] CDK IaC alternative
