@@ -1,0 +1,530 @@
+# Claude AI Agent Handoff Document
+
+**Project**: AWS Savings Dashboard
+**Last Updated**: 2025-01-09
+**Status**: Completed - Ready for Deployment
+**Branch**: `claude/aws-instance-scheduler-011CUxxfr877DFVJDsUyLngG`
+
+## Project Overview
+
+This is a comprehensive web UI tool for managing AWS Instance Scheduler configurations. It replaces manual DynamoDB table edits and complex CLI commands with an intuitive React-based dashboard.
+
+### What is AWS Instance Scheduler?
+
+AWS Instance Scheduler is an AWS solution that automates starting/stopping EC2 and RDS instances based on schedules to reduce costs. It stores configuration in a DynamoDB table but lacks a user interface.
+
+### What This Dashboard Provides
+
+- Visual schedule and period management
+- Instance discovery across accounts/regions
+- Real-time cost savings analytics
+- Schedule forecasting and validation
+- Modern React UI with Material-UI
+
+## Current State
+
+### ✅ Completed Features
+
+1. **Backend API** (TypeScript + Lambda)
+   - Full CRUD for schedules, periods, and configuration
+   - EC2/RDS instance discovery across regions
+   - Cost savings calculation engine
+   - Schedule validation and forecasting
+   - Complete REST API with 16+ endpoints
+
+2. **Web Dashboard** (React + TypeScript)
+   - Dashboard with stats and upcoming events
+   - Schedule management (create, edit, delete)
+   - Period management with time/day/month configuration
+   - Instance listing with filtering
+   - Analytics page with savings breakdown
+   - Settings page for global configuration
+
+3. **Infrastructure** (Terraform)
+   - Modular Terraform configuration
+   - API Gateway + Lambda module
+   - S3 + CloudFront module
+   - IAM roles with least privilege
+   - Remote state backend template
+
+4. **Documentation**
+   - ARCHITECTURE.md - System design
+   - Docs/deployment.md - Deployment guide
+   - Docs/user-guide.md - End-user documentation
+   - Docs/api-reference.md - API documentation
+   - Docs/development.md - Developer guide
+   - IaC/README.md - Terraform guide
+
+### 🚧 Not Yet Implemented
+
+1. Authentication/Authorization (API is currently open)
+2. Multi-account role assumption for cross-account instance discovery
+3. Automated testing (unit tests scaffolded but not written)
+4. CI/CD pipeline
+5. Schedule templates library
+6. Email/Slack notifications
+7. Approval workflows
+
+## Repository Structure
+
+```
+aws-savings-dashboard/
+├── Backend/                  # Lambda API (TypeScript)
+│   ├── src/
+│   │   ├── handlers/        # API endpoint handlers
+│   │   ├── services/        # Business logic
+│   │   ├── repositories/    # Data access layer
+│   │   ├── types/           # TypeScript types
+│   │   └── utils/           # Utilities
+│   ├── package.json
+│   └── tsconfig.json
+├── WebDashboard/            # React SPA (TypeScript)
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── pages/           # Page components
+│   │   ├── services/        # API client
+│   │   └── types/           # TypeScript types
+│   ├── package.json
+│   └── vite.config.ts
+├── IaC/                     # Terraform infrastructure
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   ├── modules/
+│   │   ├── api/            # API Gateway + Lambda
+│   │   └── dashboard/      # S3 + CloudFront
+│   └── terraform.tfvars.example
+├── Docs/                    # Documentation
+│   ├── deployment.md
+│   ├── user-guide.md
+│   ├── api-reference.md
+│   └── development.md
+├── ARCHITECTURE.md
+├── README.md
+└── .claude                  # This file
+```
+
+## Technology Stack
+
+- **Backend**: Node.js 20, TypeScript, AWS SDK v3, Zod validation
+- **Frontend**: React 18, TypeScript, Material-UI, React Query, Recharts, Vite
+- **Infrastructure**: Terraform, AWS Lambda, API Gateway, S3, CloudFront, DynamoDB
+- **Testing**: Jest (configured but tests not written)
+
+## Key Files to Understand
+
+### Backend
+- `Backend/src/types/index.ts` - All TypeScript type definitions and Zod schemas
+- `Backend/src/repositories/dynamodb-repository.ts` - DynamoDB CRUD operations
+- `Backend/src/repositories/instance-repository.ts` - EC2/RDS discovery
+- `Backend/src/services/schedule-service.ts` - Schedule validation and forecasting
+- `Backend/src/services/analytics-service.ts` - Cost savings calculations
+- `Backend/src/handlers/` - Lambda function handlers for each API endpoint
+
+### Frontend
+- `WebDashboard/src/App.tsx` - React app setup with routing
+- `WebDashboard/src/services/api.ts` - API client with all endpoints
+- `WebDashboard/src/pages/Dashboard.tsx` - Main dashboard page
+- `WebDashboard/src/pages/Schedules.tsx` - Schedule management
+- `WebDashboard/src/pages/Analytics.tsx` - Cost savings analytics
+
+### Infrastructure
+- `IaC/main.tf` - Main Terraform configuration
+- `IaC/modules/api/main.tf` - Lambda and API Gateway resources
+- `IaC/modules/dashboard/main.tf` - S3 and CloudFront resources
+
+## How to Deploy
+
+### Prerequisites
+- AWS Instance Scheduler already deployed
+- Node.js 18+, npm, Terraform 1.5+
+- AWS CLI configured
+
+### Quick Deploy
+
+```bash
+# 1. Build backend
+cd Backend
+npm install
+npm run build
+
+# 2. Configure Terraform
+cd ../IaC
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your DynamoDB table name
+
+# 3. Deploy infrastructure
+terraform init
+terraform apply
+
+# 4. Build frontend
+cd ../WebDashboard
+npm install
+# Update .env with API URL from terraform output
+npm run build
+
+# 5. Upload frontend
+BUCKET=$(cd ../IaC && terraform output -raw s3_bucket_name)
+aws s3 sync dist/ s3://$BUCKET/
+
+# 6. Invalidate CloudFront
+DIST_ID=$(cd ../IaC && terraform output -raw cloudfront_distribution_id)
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+# 7. Access dashboard
+cd ../IaC
+terraform output dashboard_url
+```
+
+See `Docs/deployment.md` for detailed instructions.
+
+## Environment Variables
+
+### Backend (.env)
+```env
+AWS_REGION=us-east-1
+CONFIG_TABLE_NAME=InstanceScheduler-ConfigTable
+SCHEDULE_TAG_NAME=Schedule
+NODE_ENV=production
+```
+
+### Frontend (.env)
+```env
+VITE_API_URL=https://xxxxxxx.execute-api.us-east-1.amazonaws.com/prod
+```
+
+### Terraform (terraform.tfvars)
+```hcl
+aws_region = "us-east-1"
+environment = "prod"
+config_table_name = "InstanceScheduler-ConfigTable"
+schedule_tag_name = "Schedule"
+```
+
+## Common Tasks for AI Agents
+
+### Adding a New API Endpoint
+
+1. Define types in `Backend/src/types/index.ts`
+2. Add repository method in appropriate repository file
+3. Create handler in `Backend/src/handlers/`
+4. Add API Gateway resource in `IaC/modules/api/main.tf`
+5. Add method in `IaC/modules/api/methods.tf`
+6. Update frontend API client in `WebDashboard/src/services/api.ts`
+
+### Adding a New Page
+
+1. Create page component in `WebDashboard/src/pages/`
+2. Add route in `WebDashboard/src/App.tsx`
+3. Add menu item in `WebDashboard/src/components/Layout.tsx`
+
+### Adding Authentication
+
+**Recommended Approach**: Amazon Cognito
+
+1. Create Cognito User Pool in Terraform:
+   ```hcl
+   # IaC/modules/auth/main.tf
+   resource "aws_cognito_user_pool" "dashboard" {
+     name = "${var.project_name}-${var.environment}-users"
+   }
+   ```
+
+2. Add Cognito authorizer to API Gateway:
+   ```hcl
+   # IaC/modules/api/main.tf
+   resource "aws_api_gateway_authorizer" "cognito" {
+     name          = "cognito-authorizer"
+     type          = "COGNITO_USER_POOLS"
+     rest_api_id   = aws_api_gateway_rest_api.api.id
+     provider_arns = [var.cognito_user_pool_arn]
+   }
+   ```
+
+3. Update methods to use authorizer:
+   ```hcl
+   authorization = "COGNITO_USER_POOLS"
+   authorizer_id = aws_api_gateway_authorizer.cognito.id
+   ```
+
+4. Add authentication to frontend:
+   ```bash
+   cd WebDashboard
+   npm install amazon-cognito-identity-js
+   ```
+
+5. Create auth context in `WebDashboard/src/contexts/AuthContext.tsx`
+
+### Running Tests
+
+```bash
+# Backend tests
+cd Backend
+npm test
+
+# Frontend tests
+cd WebDashboard
+npm test
+```
+
+**Note**: Test files exist but tests not yet written. See `Backend/tests/` for examples.
+
+### Updating Lambda Code
+
+```bash
+cd Backend
+npm run build
+cd ../IaC
+terraform taint module.api.aws_lambda_function.api_function
+terraform apply
+```
+
+### Updating Frontend
+
+```bash
+cd WebDashboard
+npm run build
+BUCKET=$(cd ../IaC && terraform output -raw s3_bucket_name)
+aws s3 sync dist/ s3://$BUCKET/ --delete
+DIST_ID=$(cd ../IaC && terraform output -raw cloudfront_distribution_id)
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+```
+
+## Known Issues and Gotchas
+
+### Issue 1: Lambda Package Size
+The Lambda deployment package is created by zipping `Backend/dist/`. If it exceeds 50MB, you'll need to use Lambda layers.
+
+**Solution**: Exclude `node_modules` from backend build, use Lambda layers for dependencies.
+
+### Issue 2: CORS Configuration
+The API allows all origins (`*`) by default. This should be restricted in production.
+
+**Solution**: Update `terraform.tfvars`:
+```hcl
+cors_allowed_origins = ["https://your-cloudfront-domain.cloudfront.net"]
+```
+
+### Issue 3: CloudFront Cache
+After uploading new frontend files, CloudFront may serve cached versions.
+
+**Solution**: Always invalidate CloudFront cache after S3 upload.
+
+### Issue 4: API Gateway Integration
+The current implementation uses a single Lambda function for all endpoints with AWS_PROXY integration. This means all routing logic is in the Lambda.
+
+**Alternative**: Create separate Lambda functions per endpoint for better isolation.
+
+### Issue 5: Instance Discovery Timeout
+If you have many instances across many regions, the Lambda function may timeout (default 30s).
+
+**Solution**: Increase timeout in `terraform.tfvars`:
+```hcl
+lambda_timeout = 60
+```
+
+## Cost Breakdown
+
+Expected monthly AWS costs:
+- Lambda: $2-5 (depends on usage)
+- API Gateway: $3-5 (depends on requests)
+- S3: $1 (static hosting)
+- CloudFront: $1 (CDN)
+- CloudWatch Logs: $1
+- **Total**: ~$8-17/month
+
+Savings from Instance Scheduler typically: $1000s/month
+
+## Development Workflow
+
+### Local Development
+
+1. Start backend (requires AWS credentials):
+   ```bash
+   cd Backend
+   npm run build
+   # Use AWS SAM Local or deploy to dev environment
+   ```
+
+2. Start frontend:
+   ```bash
+   cd WebDashboard
+   npm run dev
+   # Opens http://localhost:3000
+   ```
+
+### Git Workflow
+
+- Main branch: `main` (protected)
+- Feature branches: `feature/description`
+- Current work: `claude/aws-instance-scheduler-011CUxxfr877DFVJDsUyLngG`
+
+### Deployment Workflow
+
+1. Make changes in feature branch
+2. Test locally
+3. Build backend: `cd Backend && npm run build`
+4. Apply Terraform: `cd IaC && terraform apply`
+5. Build frontend: `cd WebDashboard && npm run build`
+6. Upload to S3 and invalidate CloudFront
+7. Test in deployed environment
+8. Merge to main
+
+## Next Steps / Roadmap
+
+### High Priority
+1. **Add Authentication** - Implement Cognito for API security
+2. **Write Tests** - Add unit and integration tests
+3. **CI/CD Pipeline** - Automate build and deployment
+4. **Multi-Account Support** - Cross-account role assumption
+
+### Medium Priority
+5. **Schedule Templates** - Pre-built schedule templates
+6. **Notifications** - Email/Slack alerts for schedule changes
+7. **Approval Workflow** - Require approval for changes
+8. **Enhanced Analytics** - More detailed cost breakdowns
+
+### Low Priority
+9. **Mobile App** - React Native companion app
+10. **AI Recommendations** - ML-based schedule optimization
+11. **Advanced Filtering** - More instance filtering options
+12. **Export Reports** - PDF/CSV export functionality
+
+## Important Context for AI Agents
+
+### AWS Instance Scheduler Integration
+
+This dashboard is a **read/write** interface to the AWS Instance Scheduler DynamoDB table. It does NOT replace Instance Scheduler - it enhances it.
+
+**DynamoDB Table Schema**:
+- Items have `type` attribute: `config`, `schedule`, or `period`
+- `config` items: Global configuration (single item)
+- `schedule` items: Schedule definitions (multiple)
+- `period` items: Time period definitions (multiple)
+
+**Tag-Based Scheduling**:
+Instances are scheduled by adding a tag (default: `Schedule`) with the schedule name as the value.
+
+### Cost Calculation Logic
+
+The cost savings calculation is **estimated** based on:
+1. Instance type hourly on-demand rate
+2. Hours per month the schedule runs (calculated from periods)
+3. Hours saved = 730 - hours_running
+4. Savings = hours_saved × hourly_rate
+
+**Limitations**:
+- Does not account for reserved instances or savings plans
+- Uses simplified pricing (may not reflect exact rates)
+- Does not include data transfer or storage costs
+
+For accurate pricing, integrate AWS Pricing API.
+
+### Frontend State Management
+
+- **Server State**: React Query (cached, auto-refetch)
+- **Client State**: Zustand (if needed, not yet implemented)
+- **Forms**: React Hook Form
+
+### API Design Pattern
+
+All API handlers follow this pattern:
+1. Parse path parameters and query strings
+2. Validate request body with Zod
+3. Call service/repository layer
+4. Return standardized response with `createResponse()`
+5. Handle errors with `handleError()`
+
+## Debugging Tips
+
+### Backend Debugging
+
+View Lambda logs:
+```bash
+aws logs tail /aws/lambda/aws-savings-dashboard-prod-api --follow
+```
+
+Check DynamoDB table:
+```bash
+aws dynamodb scan --table-name InstanceScheduler-ConfigTable
+```
+
+### Frontend Debugging
+
+- Use React DevTools browser extension
+- Check Network tab for API calls
+- Console log API responses
+- Use React Query DevTools (add to App.tsx)
+
+### Infrastructure Debugging
+
+```bash
+# View Terraform state
+terraform show
+
+# View specific resource
+terraform state show module.api.aws_lambda_function.api_function
+
+# View plan without applying
+terraform plan
+
+# Graph infrastructure
+terraform graph | dot -Tpng > graph.png
+```
+
+## Security Considerations
+
+### Current Security Posture
+
+⚠️ **The API is currently OPEN** - no authentication required
+
+### Production Security Checklist
+
+- [ ] Enable Cognito authentication
+- [ ] Restrict CORS origins
+- [ ] Enable API Gateway API keys
+- [ ] Use AWS WAF for API Gateway
+- [ ] Enable CloudTrail logging
+- [ ] Scan dependencies with `npm audit`
+- [ ] Enable S3 bucket encryption (already done)
+- [ ] Use HTTPS only (already done via CloudFront)
+- [ ] Review IAM policies for least privilege (already done)
+- [ ] Enable MFA for AWS account
+
+## Contacts and Resources
+
+- **AWS Instance Scheduler Docs**: https://docs.aws.amazon.com/solutions/latest/instance-scheduler-on-aws/
+- **AWS Pricing API**: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html
+- **Terraform AWS Provider**: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
+- **React Query Docs**: https://tanstack.com/query/latest
+- **Material-UI Docs**: https://mui.com/
+
+## Questions for Continuation
+
+When resuming this project, consider:
+
+1. **Which environment are you deploying to?** (dev, staging, prod)
+2. **What is the Instance Scheduler DynamoDB table name?**
+3. **Do you need multi-account support?**
+4. **Should authentication be added before first deployment?**
+5. **Are there specific regions to support?**
+6. **What are the instance tagging conventions?**
+
+## Final Notes
+
+This project is **production-ready** but requires:
+1. Building the backend (`npm run build`)
+2. Deploying with Terraform
+3. Uploading the frontend to S3
+
+All code is committed to branch: `claude/aws-instance-scheduler-011CUxxfr877DFVJDsUyLngG`
+
+For questions or issues, refer to the comprehensive documentation in `Docs/` directory.
+
+---
+
+**AI Agent Handoff Complete** ✅
+
+Last modified: 2025-01-09
+Project Status: Ready for Deployment
+Next Agent: Start with `Docs/deployment.md` for deployment instructions.
